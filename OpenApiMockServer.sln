@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenApiMockServer.WebApi", "src\OpenApiMockServer.WebApi\OpenApiMockServer.WebApi.csproj", "{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{17A7DCCE-5BE6-4CCC-B16D-40757B9B7411}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BA540368-904F-4488-9366-51F184E8AC27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenApiMockServer.WebApi.Test", "tests\OpenApiMockServer.WebApi.Test\OpenApiMockServer.WebApi.Test.csproj", "{DB22F42F-D592-4961-BE31-84605A9D2337}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB22F42F-D592-4961-BE31-84605A9D2337}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB22F42F-D592-4961-BE31-84605A9D2337}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB22F42F-D592-4961-BE31-84605A9D2337}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB22F42F-D592-4961-BE31-84605A9D2337}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2B520970-1BBC-4BFB-BDF5-6A37FACFF89D} = {17A7DCCE-5BE6-4CCC-B16D-40757B9B7411}
+		{DB22F42F-D592-4961-BE31-84605A9D2337} = {BA540368-904F-4488-9366-51F184E8AC27}
+	EndGlobalSection
+EndGlobal

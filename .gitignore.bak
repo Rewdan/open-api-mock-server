@@ -35,8 +35,7 @@ ScaffoldingReadMe.txt
 *.nupkg
 # NuGet Symbol Packages
 *.snupkg
-*.vs
-*.github
+
 # Others
 ~$*
 *~
