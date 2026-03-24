@@ -16,7 +16,8 @@ namespace OpenApiMockServer.WebApi.Configure
             // Получаем сервисы
             var logger = app.Services.GetRequiredService<ILogger<Program>>();
             var oauthService = app.Services.GetRequiredService<OAuthService>();
-
+            app.UseSwagger();
+            app.UseSwaggerUi();
             // Определяем базовый URL для OAuth2
             var urls = app.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5000";
             var baseUrl = urls.Split(';').FirstOrDefault() ?? "http://localhost:5000";

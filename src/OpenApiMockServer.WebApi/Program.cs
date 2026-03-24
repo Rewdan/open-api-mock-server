@@ -17,6 +17,8 @@ public class Program
             options.SerializerOptions.WriteIndented = true;
         });
 
+        builder.Services.AddSwaggerGen();
+
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpClient("BrowserLikeClient", client =>
         {
