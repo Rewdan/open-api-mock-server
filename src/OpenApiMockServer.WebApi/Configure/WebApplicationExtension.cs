@@ -1,4 +1,5 @@
-﻿using OpenApiMockServer.WebApi.Middleware;
+﻿using Microsoft.AspNetCore.Builder;
+using OpenApiMockServer.WebApi.Middleware;
 using OpenApiMockServer.WebApi.Models;
 using OpenApiMockServer.WebApi.Services;
 
@@ -17,7 +18,7 @@ namespace OpenApiMockServer.WebApi.Configure
             var logger = app.Services.GetRequiredService<ILogger<Program>>();
             var oauthService = app.Services.GetRequiredService<OAuthService>();
             app.UseSwagger();
-            app.UseSwaggerUi();
+            app.UseSwaggerUI();
             // Определяем базовый URL для OAuth2
             var urls = app.Configuration["ASPNETCORE_URLS"] ?? "http://localhost:5000";
             var baseUrl = urls.Split(';').FirstOrDefault() ?? "http://localhost:5000";
