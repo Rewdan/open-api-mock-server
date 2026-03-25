@@ -1056,7 +1056,7 @@ public class MockEndpointBuilder
 <head>
     <meta charset='UTF-8'>
     <title>Swagger UI - {serviceInfo.Name}</title>
-    <link rel='stylesheet' href='https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css'>
+    <link rel='stylesheet' href='{baseUrl}/swagger/swagger-ui.css'>
     <style>
         body {{ margin: 0; padding: 20px; }}
         #swagger-ui {{ max-width: 1460px; margin: 0 auto; }}
@@ -1158,8 +1158,8 @@ public class MockEndpointBuilder
     
     <div id='swagger-ui'></div>
     
-    <script src='https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js'></script>
-    <script src='https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js'></script>
+    <script src='{baseUrl}/swagger/swagger-ui-bundle.js'></script>
+    <script src='{baseUrl}/swagger/swagger-ui-standalone-preset.js'></script>
     <script>
         // Функция для показа уведомлений
         function showNotification(message, type) {{
