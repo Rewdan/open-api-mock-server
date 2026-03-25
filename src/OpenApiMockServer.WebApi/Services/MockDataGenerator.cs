@@ -9,10 +9,177 @@ public class MockDataGenerator
 {
     private readonly ILogger<MockDataGenerator> _logger;
     private readonly Dictionary<string, Faker> _fakers = new();
+    private const int MAX_DEPTH = 3; // Максимальная глубина рекурсии
+    private const int MAX_ARRAY_SIZE = 5; // Максимальный размер массива
 
     public MockDataGenerator(ILogger<MockDataGenerator> logger)
     {
         _logger = logger;
+    }
+
+    public JsonObject GenerateObject(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
+    {
+        try
+        {
+            // Проверка глубины рекурсии
+            if (depth >= MAX_DEPTH)
+            {
+                _logger.LogDebug($"Reached max depth ({MAX_DEPTH}) for {entityName}, returning empty object");
+                return new JsonObject();
+            }
+
+            var resolvedSchema = ResolveSchema(schema, document);
+            if (resolvedSchema?.Properties == null || !resolvedSchema.Properties.Any())
+            {
+                _logger.LogDebug($"Schema for {entityName} has no properties");
+                return new JsonObject();
+            }
+
+            var result = new JsonObject();
+            var faker = GetOrCreateFaker(entityName);
+
+            foreach (var prop in resolvedSchema.Properties)
+            {
+                var propName = prop.Key;
+                var propSchema = prop.Value;
+
+                // Пропускаем readOnly поля
+                if (propSchema.ReadOnly)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var value = GenerateValue(propSchema, $"{entityName}.{propName}", document, depth + 1);
+                    if (value != null)
+                    {
+                        result[propName] = value;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error generating field {propName} for {entityName}");
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error generating object for {entityName}");
+            return new JsonObject();
+        }
+    }
+
+    public JsonArray GenerateArray(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
+    {
+        try
+        {
+            // Проверка глубины рекурсии
+            if (depth >= MAX_DEPTH)
+            {
+                _logger.LogDebug($"Reached max depth ({MAX_DEPTH}) for array {entityName}, returning empty array");
+                return new JsonArray();
+            }
+
+            var resolvedSchema = ResolveSchema(schema, document);
+            var itemsSchema = resolvedSchema?.Items;
+            if (itemsSchema == null)
+            {
+                return new JsonArray();
+            }
+
+            var array = new JsonArray();
+
+            // Генерируем от 2 до MAX_ARRAY_SIZE элементов
+            var count = new Random().Next(2, MAX_ARRAY_SIZE + 1);
+
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    var item = GenerateValue(itemsSchema, $"{entityName}[{i}]", document, depth + 1);
+                    if (item != null)
+                    {
+                        array.Add(item);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error generating array element {entityName}[{i}]");
+                }
+            }
+
+            return array;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error generating array for {entityName}");
+            return new JsonArray();
+        }
+    }
+
+    public JsonNode? GenerateValue(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
+    {
+        try
+        {
+            // Проверка глубины рекурсии
+            if (depth >= MAX_DEPTH)
+            {
+                _logger.LogDebug($"Reached max depth ({MAX_DEPTH}) for {entityName}, returning null");
+                return null;
+            }
+
+            var resolvedSchema = ResolveSchema(schema, document);
+            if (resolvedSchema == null)
+            {
+                return null;
+            }
+
+            // Обработка enum
+            if (resolvedSchema.Enum != null && resolvedSchema.Enum.Any())
+            {
+                return GenerateEnumValue(resolvedSchema.Enum, entityName);
+            }
+
+            // Обработка объекта
+            if (resolvedSchema.Properties != null && resolvedSchema.Properties.Any())
+            {
+                return GenerateObject(resolvedSchema, entityName, document, depth);
+            }
+
+            // Обработка массива
+            if (resolvedSchema.Type == "array")
+            {
+                return GenerateArray(resolvedSchema, entityName, document, depth);
+            }
+
+            // Обработка примитивных типов
+            return GeneratePrimitiveValue(resolvedSchema, entityName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error generating value for {entityName}");
+            return null;
+        }
+    }
+
+    private JsonNode? GenerateEnumValue(IList<IOpenApiAny> enumValues, string entityName)
+    {
+        try
+        {
+            var random = new Random();
+            var index = random.Next(0, enumValues.Count);
+            var enumValue = enumValues[index];
+
+            return ConvertOpenApiAnyToJsonNode(enumValue);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error generating enum value for {entityName}");
+            return JsonValue.Create(string.Empty);
+        }
     }
 
     private JsonNode? GeneratePrimitiveValue(OpenApiSchema schema, string entityName)
@@ -21,7 +188,7 @@ public class MockDataGenerator
         {
             var faker = GetOrCreateFaker(entityName);
 
-            object? value = schema.Type switch
+            object value = schema.Type switch
             {
                 "string" when schema.Format == "uuid" || schema.Format == "guid" =>
                     Guid.NewGuid().ToString("D"),
@@ -74,7 +241,7 @@ public class MockDataGenerator
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Ошибка при генерации примитивного значения для {entityName}");
+            _logger.LogError(ex, $"Error generating primitive value for {entityName}");
             return JsonValue.Create(string.Empty);
         }
     }
@@ -107,163 +274,6 @@ public class MockDataGenerator
         return Math.Round(faker.Random.Double(min, max), 2);
     }
 
-    public JsonObject GenerateObject(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
-    {
-        try
-        {
-            if (depth > 10)
-            {
-                _logger.LogWarning($"Достигнута максимальная глубина рекурсии для {entityName}");
-                return new JsonObject();
-            }
-
-            var resolvedSchema = ResolveSchema(schema, document);
-            if (resolvedSchema?.Properties == null || !resolvedSchema.Properties.Any())
-            {
-                _logger.LogWarning($"Схема для {entityName} не содержит свойств");
-                return new JsonObject();
-            }
-
-            var result = new JsonObject();
-            var faker = GetOrCreateFaker(entityName);
-
-            foreach (var prop in resolvedSchema.Properties)
-            {
-                var propName = prop.Key;
-                var propSchema = prop.Value;
-
-                // Пропускаем readOnly поля
-                if (propSchema.ReadOnly)
-                {
-                    continue;
-                }
-
-                try
-                {
-                    var value = GenerateValue(propSchema, $"{entityName}.{propName}", document, depth + 1);
-                    if (value != null)
-                    {
-                        result[propName] = value;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Ошибка при генерации поля {propName} для {entityName}");
-                }
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Ошибка при генерации объекта для {entityName}");
-            return new JsonObject();
-        }
-    }
-
-    public JsonArray GenerateArray(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
-    {
-        try
-        {
-            if (depth > 10)
-            {
-                _logger.LogWarning($"Достигнута максимальная глубина рекурсии для массива {entityName}");
-                return new JsonArray();
-            }
-
-            var resolvedSchema = ResolveSchema(schema, document);
-            var itemsSchema = resolvedSchema?.Items;
-            if (itemsSchema == null)
-            {
-                return new JsonArray();
-            }
-
-            var array = new JsonArray();
-
-            // Генерируем от 2 до 5 элементов
-            var count = new Random().Next(2, 6);
-
-            for (int i = 0; i < count; i++)
-            {
-                try
-                {
-                    var item = GenerateValue(itemsSchema, $"{entityName}[{i}]", document, depth + 1);
-                    if (item != null)
-                    {
-                        array.Add(item);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"Ошибка при генерации элемента массива {entityName}[{i}]");
-                }
-            }
-
-            return array;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Ошибка при генерации массива для {entityName}");
-            return new JsonArray();
-        }
-    }
-
-    public JsonNode? GenerateValue(OpenApiSchema schema, string entityName, OpenApiDocument? document = null, int depth = 0)
-    {
-        try
-        {
-            var resolvedSchema = ResolveSchema(schema, document);
-            if (resolvedSchema == null)
-            {
-                return null;
-            }
-
-            // Обработка enum
-            if (resolvedSchema.Enum != null && resolvedSchema.Enum.Any())
-            {
-                return GenerateEnumValue(resolvedSchema.Enum, entityName);
-            }
-
-            // Обработка объекта
-            if (resolvedSchema.Properties != null && resolvedSchema.Properties.Any())
-            {
-                return GenerateObject(resolvedSchema, entityName, document, depth);
-            }
-
-            // Обработка массива
-            if (resolvedSchema.Type == "array")
-            {
-                return GenerateArray(resolvedSchema, entityName, document, depth);
-            }
-
-            // Обработка примитивных типов
-            return GeneratePrimitiveValue(resolvedSchema, entityName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Ошибка при генерации значения для {entityName}");
-            return null;
-        }
-    }
-
-    private JsonNode? GenerateEnumValue(IList<IOpenApiAny> enumValues, string entityName)
-    {
-        try
-        {
-            var random = new Random();
-            var index = random.Next(0, enumValues.Count);
-            var enumValue = enumValues[index];
-
-            return ConvertOpenApiAnyToJsonNode(enumValue);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Ошибка при генерации enum значения для {entityName}");
-            return JsonValue.Create(string.Empty);
-        }
-    }
-
-
     private JsonNode? ConvertOpenApiAnyToJsonNode(IOpenApiAny openApiAny)
     {
         return openApiAny switch
@@ -273,7 +283,7 @@ public class MockDataGenerator
             OpenApiLong openApiLong => JsonValue.Create(openApiLong.Value),
             OpenApiFloat openApiFloat => JsonValue.Create(openApiFloat.Value),
             OpenApiDouble openApiDouble => JsonValue.Create(openApiDouble.Value),
-            //OpenApiDecimal openApiDecimal => JsonValue.Create(openApiDecimal.Value),
+           // OpenApiDecimal openApiDecimal => JsonValue.Create(openApiDecimal.Value),
             OpenApiBoolean openApiBoolean => JsonValue.Create(openApiBoolean.Value),
             OpenApiDateTime openApiDateTime => JsonValue.Create(openApiDateTime.Value.ToString("o")),
             OpenApiDate openApiDate => JsonValue.Create(openApiDate.Value.ToString("yyyy-MM-dd")),
